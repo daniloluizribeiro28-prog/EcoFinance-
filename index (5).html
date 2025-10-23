@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EcoFinance — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a2d9b6f9c1.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg:#f6fbff;
+      --card:#ffffff;
+      --muted:#7b8a97;
+      --accent:#2b9f6b;
+      --accent-2:#2b7fa9;
+      --danger:#e05555;
+      --glass: rgba(43, 159, 107, 0.06);
+      font-family:'Poppins',system-ui,Arial;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#f6fbff 0%, #eff7fb 100%);color:#123;overflow-x:hidden;}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;gap:28px;padding:28px}
+    .sidebar{background:var(--card);border-radius:14px;padding:22px;box-shadow:0 6px 20px rgba(17,24,39,0.06);}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+    .brand h1{font-size:18px;margin:0}
+    nav{margin-top:18px}
+    nav button{width:100%;display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;border:0;background:transparent;color:var(--muted);cursor:pointer;transition:.2s}
+    nav button:hover{background:var(--glass);color:var(--accent)}
+    nav button.active{background:var(--glass);color:var(--accent);font-weight:600}
+    .main{display:flex;flex-direction:column;gap:18px;position:relative;z-index:2}
+    header{display:flex;justify-content:space-between;align-items:center}
+    .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
+    .btn:hover{opacity:.9}
+    .card{background:var(--card);padding:18px;border-radius:14px;box-shadow:0 10px 30px rgba(16,24,40,0.06)}
+    .summary{display:flex;gap:12px;flex-wrap:wrap}
+    .summary .item{flex:1;min-width:150px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.6),transparent)}
+    .summary .value{font-weight:700;font-size:18px}
+    .charts{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:30px;text-align:center;}
+    canvas.chart-canvas{max-width:300px!important;max-height:300px!important;}
+    .months-container{
+      text-align:left;
+      margin-top:20px;
+      padding:10px;
+      background:var(--glass);
+      border-radius:10px;
+      font-size:15px;
+    }
+    .months-container strong{display:block;margin-bottom:8px;color:var(--accent);}
+    .month-block{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #d9e7e2;}
+    .month-block:last-child{border-bottom:none;}
+    .month-title{font-weight:600;color:var(--accent);}
+    .month-cats{font-size:13px;margin-left:10px;}
+    .month-compare{margin-top:6px;font-weight:600;}
+    .month-compare.green{color:#2b9f6b;}
+    .month-compare.red{color:#e05555;}
+    .month-compare.orange{color:#FFA500;}
+    .month-compare.gray{color:#7b8a97;}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;text-align:left;border-bottom:1px solid #eef4f8}
+    td:last-child{text-align:right}
+    .table-wrap{max-height:420px;overflow:auto}
+    footer{font-size:12px;color:var(--muted);padding:12px;text-align:center}
+    @media (max-width:980px){.app{grid-template-columns:1fr}.sidebar{order:2}}
+    .section{display:none}
+    .section.active{display:block}
+
+    /* ======= SEÇÃO INÍCIO FUTURÍSTICA ======= */
+    #inicio {
+      position: relative;
+      overflow: hidden;
+      color: white;
+      border-radius: 14px;
+      padding: 40px;
+      background: #020617;
+      min-height: 360px; /* garante espaço para o canvas */
+    }
+
+    #bgAnimation {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      display:block;
+    }
+
+    .inicio-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+
+    .inicio-content h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #00ffb3;
+    }
+
+    .inicio-content p {
+      max-width: 700px;
+      margin: 12px auto;
+      font-size: 1.1rem;
+      color: #cce7e0;
+      line-height: 1.6;
+    }
+
+    .inicio-graficos {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .inicio-card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 20px;
+      width: 260px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,255,179,0.06);
+    }
+
+    .inicio-card i {
+      font-size: 32px;
+      color: #00ffb3;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar card">
+      <div class="brand">
+        <div class="logo">EF</div>
+        <div>
+          <h1>EcoFinance</h1>
+          <div style="font-size:12px;color:var(--muted);">Controle seus gastos</div>
+        </div>
+      </div>
+      <nav>
+        <button class="active" data-section="inicio"><i class="fa-solid fa-house"></i> Início</button>
+        <button data-section="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
+        <button data-section="cadastro"><i class="fa-solid fa-plus"></i> Cadastro</button>
+        <button data-section="historico"><i class="fa-solid fa-list"></i> Histórico</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <!-- SEÇÃO INÍCIO -->
+      <section id="inicio" class="section active">
+        <canvas id="bgAnimation"></canvas>
+        <div class="inicio-content">
+          <h1>Bem-vindo ao EcoFinance 🚀</h1>
+          <p>O <strong>EcoFinance</strong> é um painel inteligente de controle financeiro que ajuda você a visualizar, organizar e compreender seus gastos de maneira simples e eficiente.</p>
+          <p>Aqui você pode cadastrar suas despesas diárias, acompanhar seus gastos por categoria e analisar gráficos interativos que mostram sua evolução mês a mês.</p>
+          <p>Use o menu lateral para navegar:</p>
+          <ul style="text-align:left;display:inline-block;color:#bdebe2;margin-top:10px;">
+            <li><strong>Dashboard:</strong> Veja um resumo geral dos seus gastos.</li>
+            <li><strong>Cadastro:</strong> Registre suas contas e despesas.</li>
+            <li><strong>Histórico:</strong> Consulte todos os lançamentos feitos.</li>
+          </ul>
+
+          <div class="inicio-graficos">
+            <div class="inicio-card">
+              <i class="fa-solid fa-chart-line"></i>
+              <h3>Gráficos Dinâmicos</h3>
+              <p>Visualize como seus gastos mudam ao longo do tempo com gráficos automáticos.</p>
+            </div>
+            <div class="inicio-card">
+              <i class="fa-solid fa-leaf"></i>
+              <h3>Controle Sustentável</h3>
+              <p>Gerencie suas finanças de forma consciente e equilibrada, sem complicações.</p>
+            </div>
+            <div class="inicio-card">
+              <i class="fa-solid fa-mobile-screen"></i>
+              <h3>Experiência Mobile</h3>
+              <p>Totalmente adaptável a celulares e tablets para acesso em qualquer lugar.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO DASHBOARD -->
+      <section id="dashboard" class="section">
+        <header>
+          <div>
+            <h2>Painel de Acompanhamento</h2>
+            <div style="color:var(--muted);font-size:13px">Visão geral dos seus gastos</div>
+          </div>
+          <button id="btnClearAll" class="btn" style="background:#e05555">Limpar tudo</button>
+        </header>
+
+        <div class="card">
+          <h3>Resumo</h3>
+          <div class="summary">
+            <div class="item"><div>Hoje</div><div class="value" id="totalToday">R$ 0,00</div></div>
+            <div class="item"><div>Mês Atual</div><div class="value" id="totalMonth">R$ 0,00</div></div>
+            <div class="item"><div>Ano</div><div class="value" id="totalYear">R$ 0,00</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Gráficos</h3>
+          <div class="charts" id="chartsContainer"></div>
+          <div class="months-container" id="monthsTotals"></div>
+        </div>
+      </section>
+
+      <!-- SEÇÃO CADASTRO -->
+      <section id="cadastro" class="section">
+        <div class="card">
+          <h3>Cadastrar Conta / Produto</h3>
+          <form id="entryForm">
+            <div class="row" style="display:flex;gap:12px;">
+              <div style="flex:2">
+                <label>Nome</label><input id="name" required />
+              </div>
+              <div style="flex:1">
+                <label>Valor (R$)</label><input id="value" type="number" step="0.01" required />
+              </div>
+            </div>
+            <div class="row" style="display:flex;gap:12px;margin-top:12px;">
+              <div style="flex:1">
+                <label>Categoria</label>
+                <select id="category">
+                  <option>Luz</option><option>Água</option><option>Mercado</option>
+                  <option>Remédio</option><option>Transporte</option><option>Lazer</option><option>Outros</option>
+                </select>
+              </div>
+              <div style="flex:1">
+                <label>Data</label><input id="date" type="date" />
+              </div>
+            </div>
+            <div style="margin-top:12px;"><button class="btn" type="submit">Cadastrar</button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- SEÇÃO HISTÓRICO -->
+      <section id="historico" class="section">
+        <div class="card">
+          <h3>Histórico de Lançamentos</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Nome</th><th>Categoria</th><th>Valor</th><th></th></tr></thead>
+              <tbody id="entriesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer class="card">EcoFinance — controle inteligente de gastos.</footer>
+    </main>
+  </div>
+
+  <script>
+    // ---------- UTIL ----------
+    const $ = id => document.getElementById(id);
+    const moneyFmt = n => Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+    // ========== FUNDO DINÂMICO (SOMENTE NA SESSÃO INÍCIO) ==========
+    (function setupBgAnimation(){
+      const canvas = document.getElementById('bgAnimation');
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let DPR = window.devicePixelRatio || 1;
+      let w = 0, h = 0, particles = [], rafId;
+
+      function resizeCanvas(){
+        // pega o retângulo pai (#inicio)
+        const parent = canvas.parentElement;
+        const rect = parent.getBoundingClientRect();
+        w = Math.max(200, Math.floor(rect.width));
+        h = Math.max(160, Math.floor(rect.height));
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        canvas.width = Math.floor(rect.width * DPR);
+        canvas.height = Math.floor(rect.height * DPR);
+        ctx.setTransform(DPR,0,0,DPR,0,0);
+      }
+
+      function initParticles(){
+        particles = [];
+        const count = Math.max(30, Math.floor((w*h)/(12000))); // ajusta quantidade conforme tamanho
+        for(let i=0;i<count;i++){
+          particles.push({
+            x: Math.random()*w,
+            y: Math.random()*h,
+            vx: (Math.random()-0.5)*0.8,
+            vy: (Math.random()-0.5)*0.8,
+            r: 1.5 + Math.random()*2
+          });
+        }
+      }
+
+      function draw(){
+        ctx.clearRect(0,0,w,h);
+        // background subtle
+        // ctx.fillStyle = 'rgba(2,6,23,0.12)'; ctx.fillRect(0,0,w,h);
+        // particles
+        ctx.fillStyle = 'rgba(0,255,179,0.12)';
+        particles.forEach(p=>{
+          p.x += p.vx;
+          p.y += p.vy;
+          if(p.x < -10) p.x = w + 10;
+          if(p.x > w + 10) p.x = -10;
+          if(p.y < -10) p.y = h + 10;
+          if(p.y > h + 10) p.y = -10;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+          ctx.fill();
+        });
+
+        // lines
+        for(let i=0;i<particles.length;i++){
+          for(let j=i+1;j<particles.length;j++){
+            const a = particles[i], b = particles[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if(dist < 120){
+              const alpha = 0.35 * (1 - dist/120);
+              ctx.strokeStyle = `rgba(0,255,179,${alpha})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          }
+        }
+        rafId = requestAnimationFrame(draw);
+      }
+
+      function start(){
+        cancelAnimationFrame(rafId);
+        resizeCanvas();
+        initParticles();
+        draw();
+      }
+
+      // redimensiona ao mudar de seção ou janela
+      window.addEventListener('resize', () => {
+        DPR = window.devicePixelRatio || 1;
+        resizeCanvas();
+      });
+
+      // expõe uma função para forçar resize quando seção mostrado
+      window.__eco_startBg = start;
+
+      // start initially (but safe)
+      start();
+    })();
+
+    // ========== SISTEMA ECOFINANCE ==========
+    const STORAGE_KEY = 'ecofinance_entries_v1';
+    const load = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const save = list => localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+
+    function renderSummary(list){
+      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const month = now.getMonth();
+      const year = now.getFullYear();
+      let totalToday = 0, totalMonth = 0, totalYear = 0;
+      list.forEach(i=>{
+        if(!i.date) return;
+        const [y,m,d] = i.date.split('-').map(Number);
+        if(y===year) totalYear += Number(i.value);
+        if(y===year && m===month+1) totalMonth += Number(i.value);
+        if(i.date === todayStr) totalToday += Number(i.value);
+      });
+      $('totalToday').innerText = moneyFmt(totalToday);
+      $('totalMonth').innerText = moneyFmt(totalMonth);
+      $('totalYear').innerText = moneyFmt(totalYear);
+    }
+
+    function renderHistory(list){
+      const table=$('entriesTable');
+      table.innerHTML='';
+      list.sort((a,b)=>b.date.localeCompare(a.date));
+      list.forEach(item=>{
+        const tr=document.createElement('tr');
+        const [y,m,d]=item.date.split('-');
+        const dataFormatada=`${d}/${m}/${y}`;
+        tr.innerHTML=`
+          <td>${dataFormatada}</td>
+          <td>${item.name}</td>
+          <td>${item.category}</td>
+          <td>${moneyFmt(item.value)}</td>
+          <td><button style="background:none;border:none;color:#e05555;cursor:pointer" onclick="deleteEntry('${item.id}')"><i class="fa-solid fa-trash"></i></button></td>`;
+        table.appendChild(tr);
+      });
+    }
+
+    function deleteEntry(id){
+      const list=load().filter(i=>i.id!==id);
+      save(list);
+      renderAll();
+    }
+
+    let currentChart = null;
+    function renderCharts(list){
+      const chartsDiv=$('chartsContainer');
+      chartsDiv.innerHTML='';
+      if(!list.length){
+        chartsDiv.innerHTML='<em>Nenhum dado para exibir.</em>';
+        $('monthsTotals').innerHTML='';
+        return;
+      }
+
+      // grouped by category (pie)
+      const grouped={};
+      list.forEach(it=>{
+        const cat=it.category||'Outros';
+        grouped[cat]=(grouped[cat]||0)+Number(it.value);
+      });
+      const labels=Object.keys(grouped);
+      const data=Object.values(grouped);
+      const canvas=document.createElement('canvas');
+      canvas.className = 'chart-canvas';
+      chartsDiv.appendChild(canvas);
+      if(currentChart) currentChart.destroy();
+      currentChart=new Chart(canvas.getContext('2d'),{
+        type:'pie',
+        data:{labels,datasets:[{data,backgroundColor:['#2b9f6b','#2b7fa9','#e05555','#f1c232','#6a1b9a','#ff9800','#607d8b']}]},
+        options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom'}}}
+      });
+
+      // --- Totais por mês e comparações corretas (mês atual vs mês anterior) ---
+      // Monta mapa de totals por ano-mês (YYYY-MM)
+      const monthlyTotals = {}; // key: 'YYYY-MM' -> total
+      list.forEach(i=>{
+        if(!i.date) return;
+        const [y, m] = i.date.split('-');
+        const key = `${y}-${String(m).padStart(2,'0')}`;
+        monthlyTotals[key] = (monthlyTotals[key] || 0) + Number(i.value);
+      });
+
+      // ordena as chaves cronologicamente
+      const keysSorted = Object.keys(monthlyTotals).sort();
+
+      // Cria bloco HTML com comparação entre mês atual e anterior
+      const monthNames = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+      let containerHtml = '<strong>Totais e Categorias por Mês:</strong>';
+
+      // Para cada mês no mapa, mostra total, categorias e comparação com anterior
+      // Também reconstituímos categorias por mês para listar
+      const monthlyCats = {}; // key -> {cat: total}
+      list.forEach(it=>{
+        if(!it.date) return;
+        const [y,m] = it.date.split('-').map(Number);
+        const key = `${String(y)}-${String(m).padStart(2,'0')}`;
+        monthlyCats[key] = monthlyCats[key] || {};
+        monthlyCats[key][it.category] = (monthlyCats[key][it.category] || 0) + Number(it.value);
+      });
+
+      keysSorted.forEach((key, index) => {
+        const [year, monthStr] = key.split('-');
+        const monthNum = Number(monthStr); // 01..12
+        const total = monthlyTotals[key] || 0;
+        const cats = monthlyCats[key] || {};
+        const catsText = Object.entries(cats).map(([c, v]) => `${c}: ${moneyFmt(v)}`).join(' · ') || '—';
+        // comparison with previous month (previous key)
+        let compareHtml = '';
+        if(index > 0){
+          const prevKey = keysSorted[index-1];
+          const prevTotal = monthlyTotals[prevKey] || 0;
+          const diff = total - prevTotal;
+          if(diff < 0){
+            // economizou
+            compareHtml = `<div class="month-compare green">Comparando com o mês anterior, você economizou ${moneyFmt(Math.abs(diff))}.</div>`;
+          } else if(diff > 0){
+            // gastou mais
+            compareHtml = `<div class="month-compare red">Comparando com o mês anterior, você gastou ${moneyFmt(Math.abs(diff))} a mais.</div>`;
+          } else {
+            compareHtml = `<div class="month-compare orange">O gasto foi igual ao mês anterior.</div>`;
+          }
+        } else {
+          compareHtml = `<div class="month-compare gray">Sem mês anterior para comparação.</div>`;
+        }
+
+        containerHtml += `
+          <div class="month-block">
+            <div class="month-title">${monthNames[monthNum-1]} / ${year}: ${moneyFmt(total)}</div>
+            <div class="month-cats">${catsText}</div>
+            ${compareHtml}
+          </div>`;
+      });
+
+      $('monthsTotals').innerHTML = containerHtml;
+    }
+
+    function renderAll(){
+      const list = load();
+      renderSummary(list);
+      renderHistory(list);
+      renderCharts(list);
+    }
+
+    // form submit
+    (function attachForm(){
+      const form = $('entryForm');
+      form.addEventListener('submit', e=>{
+        e.preventDefault();
+        const name = $('name').value.trim();
+        const value = parseFloat($('value').value);
+        const category = $('category').value;
+        const dateInput = $('date').value;
+        const date = dateInput ? dateInput : new Date().toISOString().split('T')[0];
+        if(!name || !value){ alert('Preencha todos os campos!'); return; }
+        const list = load();
+        const id = 'id_' + Date.now();
+        list.push({id, name, value, category, date});
+        save(list);
+        form.reset();
+        renderAll();
+      });
+    })();
+
+    // clear all
+    $('btnClearAll').addEventListener('click', ()=>{
+      if(confirm('Apagar todos os dados?')){
+        localStorage.removeItem(STORAGE_KEY);
+        renderAll();
+      }
+    });
+
+    // NAV: funciona corretamente e ativa seção; ao mostrar início forçamos restart do canvas para ajustar tamanho
+    (function setupNav(){
+      const navButtons = document.querySelectorAll('nav button[data-section]');
+      navButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          navButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const secId = btn.dataset.section;
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          const secEl = document.getElementById(secId);
+          if(secEl) secEl.classList.add('active');
+
+          // se for inicio, (re)inicia/redimensiona a animação
+          if(secId === 'inicio' && window.__eco_startBg){
+            // espera um tick para garantir pintura do layout
+            setTimeout(()=> window.__eco_startBg(), 60);
+          }
+
+          // se for dashboard: re-renderiza gráficos (em especial o chart) para evitar problemas de canvas com display:none
+          if(secId === 'dashboard'){
+            // força re-render do chart após exposição
+            setTimeout(()=> {
+              renderAll();
+            }, 60);
+          }
+        });
+      });
+    })();
+
+    // inicializa visual
+    renderAll();
+
+    // quando janela mudar de tamanho, re-renderiza charts para manter proporções
+    window.addEventListener('resize', () => {
+      if(currentChart){
+        try{ currentChart.resize(); }catch(e){}
+      }
+      // também reajusta bg
+      if(window.__eco_startBg) window.__eco_startBg();
+    });
+  </script>
+</body>
+</html>
